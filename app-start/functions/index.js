@@ -201,7 +201,7 @@ const updateDevice = async (execution, deviceId) => {
       break;
     case 'action.devices.commands.SetModes':
       state = { currentMode: params.modes[0] };
-      ref = firebaseRef.child(deviceId).child('Modes');
+      ref = firebaseRef.child(deviceId).child('thermostatMode');
       break;
   }
 
@@ -318,7 +318,7 @@ exports.updatestate = functions.https.onRequest((request, response) => {
       temperatureSetpoint: request.body.temperatureSetpoint,
     },
     Mode: {
-      mode: request.body.mode,
+      mode: request.body.thermostatMode,
     },
   });
 
