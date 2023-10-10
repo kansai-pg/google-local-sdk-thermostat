@@ -25,10 +25,10 @@ import IntentFlow = smarthome.IntentFlow;
 
 const SERVER_PORT = 3388;
 
-interface IWasherParams {
+interface IAirConditionerParams {
   on?: boolean,
-  start?: boolean,
-  pause?: boolean,
+  temperatureSetpoint?: number, // 温度設定
+  mode?: string, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
 }
 
 class LocalExecutionApp {
@@ -54,7 +54,7 @@ class LocalExecutionApp {
     requestId: request.requestId,
     payload: {
       device: {
-        id: 'washer',
+        id: 'thermostat',
         verificationId: localDeviceId.toString(),
       }
     }
@@ -77,7 +77,7 @@ executeHandler(request: IntentFlow.ExecuteRequest):
     console.log("Handling EXECUTE intent for device: " + JSON.stringify(device));
 
     // Convert execution params to a string for the local device
-    const params = execution.params as IWasherParams;
+    const params = execution.params as IAirConditionerParams;
     const payload = this.getDataForCommand(execution.command, params);
 
     // Create a command to send over the local network
@@ -121,19 +121,19 @@ executeHandler(request: IntentFlow.ExecuteRequest):
   /**
    * Convert execution request into a local device command
    */
-  getDataForCommand(command: string, params: IWasherParams): unknown {
+  getDataForCommand(command: string, params: IAirConditionerParams): unknown {
     switch (command) {
       case 'action.devices.commands.OnOff':
         return {
           on: params.on ? true : false
         };
-      case 'action.devices.commands.StartStop':
+      case 'action.devices.commands.ThermostatTemperatureSetpoint':
         return {
-          isRunning: params.start ? true : false
+	  thermostatTemperatureSetpoint: params.temperatureSetpoint
         };
-      case 'action.devices.commands.PauseUnpause':
+      case 'action.devices.commands.SetModes':
         return {
-          isPaused: params.pause ? true : false
+          currentMode: params.mode
         };
       default:
         console.error('Unknown command', command);
