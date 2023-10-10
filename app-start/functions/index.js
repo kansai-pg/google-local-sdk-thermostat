@@ -15,7 +15,14 @@
  */
 
 'use strict';
-
+const {
+  log,
+  info,
+  debug,
+  warn,
+  error,
+  write,
+} = require("firebase-functions/logger");
 const functions = require('firebase-functions');
 const {smarthome} = require('actions-on-google');
 const {google} = require('googleapis');
@@ -317,10 +324,10 @@ exports.updatestate = functions.https.onRequest((request, response) => {
     TemperatureSetting: {
       temperatureSetpoint: request.body.temperatureSetpoint,
     },
-    Mode: {
-      mode: request.body.thermostatMode,
+    thermostatMode: {
+      mode: request.body.mode,
     },
   });
-
+  logger.debug(request.body.mode);
   return response.status(200).end();
 });
