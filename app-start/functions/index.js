@@ -127,6 +127,7 @@ app.onSync((body) => {
         willReportState: true,
         attributes: {
          "availableThermostatModes": [
+          　"off",
             "fan-only",
             "heat",
             "cool",
@@ -318,14 +319,12 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
  */
 exports.updatestate = functions.https.onRequest((request, response) => {
   firebaseRef.child('thermostat').update({
-    OnOff: {
-      on: request.body.on,
-    },
-    TemperatureSetting: {
-      temperatureSetpoint: request.body.temperatureSetpoint,
-    },
-    thermostatMode: {
-      mode: request.body.mode,
+    "data": {
+      "OnOff": {
+        "on": request.body.on,
+      },
+      "temperatureSetpoint": request.body.temperatureSetpoint,
+      "thermostatMode": request.body.mode,
     },
   });
   logger.debug(request.body.mode);
