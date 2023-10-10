@@ -201,15 +201,15 @@ const updateDevice = async (execution, deviceId) => {
   switch (command) {
     case 'action.devices.commands.OnOff':
       state = {on: params.on};
-      ref = firebaseRef.child(deviceId).child('OnOff');
+      ref = firebaseRef.child(deviceId).child('data').child('OnOff');
       break;
     case 'action.devices.commands.ThermostatTemperatureSetpoint':
       state = { temperatureSetpoint: params.thermostatTemperatureSetpoint };
-      ref = firebaseRef.child(deviceId).child('TemperatureSetting');
+      ref = firebaseRef.child(deviceId).child('data').child('temperatureSetpoint');
       break;
     case 'action.devices.commands.SetModes':
       state = { currentMode: params.modes[0] };
-      ref = firebaseRef.child(deviceId).child('thermostatMode');
+      ref = firebaseRef.child(deviceId).child('data').child('thermostatMode');
       break;
   }
 
@@ -296,10 +296,7 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
             states: {
               /* Report the current state of our washer */
               [context.params.deviceId]: {
-                //on: snapshot.OnOff,
-                //isPaused: snapshot.StartStop.isPaused,
-                //isRunning: snapshot.StartStop.isRunning,
-                on: snapshot.data.OnOff,
+                on: snapshot.data.OnOff.on,
                 temperatureSetpoint: snapshot.data.TemperatureSetting,
                 thermostatMode: snapshot.data.thermostatMode,
               },
