@@ -157,7 +157,7 @@ const queryFirebase = async (deviceId) => {
 const queryDevice = async (deviceId) => {
   const data = await queryFirebase(deviceId);
   return {
-    on: data.data.on,
+    on: data.data.OnOff,
     thermostatTemperatureSetpoint: data.data.temperatureSetpoint,
     thermostatMode: data.data.thermostatMode,
   };
