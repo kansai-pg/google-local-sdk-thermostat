@@ -15,14 +15,10 @@
  */
 'use strict';
 
-// Initializes the SmartHome.
 function SmartHome() {
   document.addEventListener('DOMContentLoaded', function () {
-    // Shortcuts to DOM Elements.
     this.denyButton = document.getElementById('demo-deny-button');
     this.userWelcome = document.getElementById('user-welcome');
-
-    // Bind events.
     this.updateButton = document.getElementById('demo-washer-update');
     this.updateButton.addEventListener('click', this.updateState.bind(this));
     this.washer = document.getElementById('demo-washer');
@@ -36,25 +32,24 @@ function SmartHome() {
         console.error('Request SYNC error', err);
       }
     });
-
     this.initFirebase();
     this.initWasher();
   }.bind(this));
 }
 
 SmartHome.prototype.initFirebase = () => {
-  // Initiates Firebase.
   console.log("Initialized Firebase");
 };
 
-SmartHome.prototype.initWasher = () => {
+SmartHome.prototype.initWasher = function() {
   console.log("Logged in as default user");
   this.uid = "123";
-  this.smarthome.userWelcome.innerHTML = "Welcome user 123!";
+  this.userWelcome = document.getElementById('user-welcome'); // userWelcomeを取得する
+  this.userWelcome.innerHTML = "Welcome user 123!";
+  this.handleData();
+  this.washer.style.display = "block";
+};
 
-  this.smarthome.handleData();
-  this.smarthome.washer.style.display = "block";
-}
 
 SmartHome.prototype.setToken = (token) => {
   document.cookie = '__session=' + token + ';max-age=3600';
@@ -62,51 +57,41 @@ SmartHome.prototype.setToken = (token) => {
 
 SmartHome.prototype.handleData = () => {
   const uid = this.uid;
-  const elOnOff = document.getElementById('demo-washer-onOff');
-  const elRunCycle = document.getElementById('demo-washer-runCycle');
-  const elStartStopPaused = document.getElementById('demo-washer-startStopPaused');
-  const elStartStopRunning = document.getElementById('demo-washer-startStopRunning');
+  const elOnOff = document.getElementById('temperature-onOff');
+  const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
+  const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
-  firebase.database().ref('/').child('washer').on("value", (snapshot) => {
+  firebase.database().ref('/').child('thermostat').on("value", (snapshot) => {
     if (snapshot.exists()) {
-      const washerState = snapshot.val();
-      console.log(washerState)
+      const thermostatState = snapshot.val();
+      console.log(thermostatState);
 
-      if (washerState.OnOff.on) elOnOff.MaterialSwitch.on();
+      if (thermostatState.data.OnOff.on) elOnOff.MaterialSwitch.on();
       else elOnOff.MaterialSwitch.off();
 
-      if (washerState.RunCycle.dummy) elRunCycle.MaterialSwitch.on();
-      else elRunCycle.MaterialSwitch.off();
+      if (thermostatState.data.OnOff.on) thermostatOnOffSwitch.checked = true;
+      else thermostatOnOffSwitch.checked = false;
 
-      if (washerState.StartStop.isPaused) elStartStopPaused.MaterialSwitch.on();
-      else elStartStopPaused.MaterialSwitch.off();
-
-      if (washerState.StartStop.isRunning) elStartStopRunning.MaterialSwitch.on();
-      else elStartStopRunning.MaterialSwitch.off();
-
+      temperatureSetpointInput.value = thermostatState.data.temperatureSetpoint;
+      thermostatModeSelect.value = thermostatState.data.thermostatMode;
     }
-  })
-}
+  });
+};
 
 SmartHome.prototype.updateState = () => {
-  const elOnOff = document.getElementById('demo-washer-onOff');
-  const elRunCycle = document.getElementById('demo-washer-runCycle');
-  const elStartStopPaused = document.getElementById('demo-washer-startStopPaused');
-  const elStartStopRunning = document.getElementById('demo-washer-startStopRunning');
+  const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
+  const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
   const pkg = {
-    OnOff: { on: elOnOff.classList.contains('is-checked') },
-    RunCycle: { dummy: elRunCycle.classList.contains('is-checked') },
-    StartStop: {
-      isPaused: elStartStopPaused.classList.contains('is-checked'),
-      isRunning: elStartStopRunning.classList.contains('is-checked')
+    data: {
+      OnOff: { on: thermostatOnOffSwitch.checked },
+      temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
+      thermostatMode: thermostatModeSelect.value
     }
   };
 
-
   console.log(pkg);
-  firebase.database().ref('/').child('washer').set(pkg);
-}
+  firebase.database().ref('/').child('thermostat').set(pkg);
+};
 
-// Load the SmartHome.
 window.smarthome = new SmartHome();

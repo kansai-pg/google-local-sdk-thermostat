@@ -15,7 +15,6 @@
  */
 
 'use strict';
-
 const functions = require('firebase-functions');
 const {smarthome} = require('actions-on-google');
 const {google} = require('googleapis');
@@ -107,27 +106,31 @@ app.onSync((body) => {
     payload: {
       agentUserId: USER_ID,
       devices: [{
-        id: 'washer',
-        type: 'action.devices.types.WASHER',
+        id: 'thermostat',
+        type: 'action.devices.types.THERMOSTAT',
         traits: [
+          'action.devices.traits.TemperatureSetting',
+          'action.devices.traits.Modes',
           'action.devices.traits.OnOff',
-          'action.devices.traits.StartStop',
-          'action.devices.traits.RunCycle',
         ],
         name: {
-          defaultNames: ['My Washer'],
-          name: 'Washer',
-          nicknames: ['Washer'],
-        },
-        deviceInfo: {
-          manufacturer: 'Acme Co',
-          model: 'acme-washer',
-          hwVersion: '1.0',
-          swVersion: '1.0.1',
+          name: 'thermostat',
         },
         willReportState: true,
         attributes: {
-          pausable: true,
+         "availableThermostatModes": [
+            "fan-only",
+            "heat",
+            "cool",
+            "dry",
+          ],
+          "thermostatTemperatureUnit": "C"
+        },
+        deviceInfo: {
+          manufacturer: 'hate-ms-inc',
+          model: 'esp32-dev-test',
+          hwVersion: '1.0',
+          swVersion: '1.0.1',
         },
         // TODO: Add otherDeviceIds for local execution
       }],
@@ -139,24 +142,18 @@ const queryFirebase = async (deviceId) => {
   const snapshot = await firebaseRef.child(deviceId).once('value');
   const snapshotVal = snapshot.val();
   return {
-    on: snapshotVal.OnOff.on,
-    isPaused: snapshotVal.StartStop.isPaused,
-    isRunning: snapshotVal.StartStop.isRunning,
+    on: snapshotVal.data.OnOff.on,
+    temperatureSetpoint: snapshotVal.data.temperatureSetpoint,
+    thermostatMode: snapshotVal.data.thermostatMode,
   };
 };
+
 const queryDevice = async (deviceId) => {
   const data = await queryFirebase(deviceId);
   return {
     on: data.on,
-    isPaused: data.isPaused,
-    isRunning: data.isRunning,
-    currentRunCycle: [{
-      currentCycle: 'rinse',
-      nextCycle: 'spin',
-      lang: 'en',
-    }],
-    currentTotalRemainingTime: 1212,
-    currentCycleRemainingTime: 301,
+    thermostatTemperatureSetpoint: data.temperatureSetpoint,
+    thermostatMode: data.thermostatMode,
   };
 };
 
@@ -190,15 +187,15 @@ const updateDevice = async (execution, deviceId) => {
   switch (command) {
     case 'action.devices.commands.OnOff':
       state = {on: params.on};
-      ref = firebaseRef.child(deviceId).child('OnOff');
+      ref = firebaseRef.child(deviceId).child('data').child('OnOff');
       break;
-    case 'action.devices.commands.StartStop':
-      state = {isRunning: params.start};
-      ref = firebaseRef.child(deviceId).child('StartStop');
+    case 'action.devices.commands.ThermostatTemperatureSetpoint':
+      state = { temperatureSetpoint: params.thermostatTemperatureSetpoint };
+      ref = firebaseRef.child(deviceId).child('data');
       break;
-    case 'action.devices.commands.PauseUnpause':
-      state = {isPaused: params.pause};
-      ref = firebaseRef.child(deviceId).child('StartStop');
+    case 'action.devices.commands.ThermostatSetMode':
+      state = { thermostatMode: params.thermostatMode };
+      ref = firebaseRef.child(deviceId).child('data');
       break;
   }
 
@@ -285,9 +282,9 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
             states: {
               /* Report the current state of our washer */
               [context.params.deviceId]: {
-                on: snapshot.OnOff.on,
-                isPaused: snapshot.StartStop.isPaused,
-                isRunning: snapshot.StartStop.isRunning,
+                on: snapshot.data.OnOff.on,
+                temperatureSetpoint: snapshot.data.temperatureSetpoint,
+                thermostatMode: snapshot.data.thermostatMode,
               },
             },
           },
@@ -304,15 +301,14 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
  * Update the current state of the washer device
  */
 exports.updatestate = functions.https.onRequest((request, response) => {
-  firebaseRef.child('washer').update({
-    OnOff: {
-      on: request.body.on,
-    },
-    StartStop: {
-      isPaused: request.body.isPaused,
-      isRunning: request.body.isRunning,
+  firebaseRef.child('thermostat').update({
+    "data": {
+      "OnOff": {
+        "on": request.body.on,
+      },
+      "temperatureSetpoint": request.body.temperatureSetpoint,
+      "thermostatMode": request.body.thermostatMode,
     },
   });
-
   return response.status(200).end();
 });
