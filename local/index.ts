@@ -47,15 +47,13 @@ class LocalExecutionApp {
   }
 
   // In this codelab, the scan data contains only local device id.
-  const localDeviceId = Buffer.from(scanData.data, 'hex');
-
   const response: IntentFlow.IdentifyResponse = {
     intent: Intents.IDENTIFY,
     requestId: request.requestId,
     payload: {
       device: {
         id: 'thermostat',
-        verificationId: localDeviceId.toString(),
+        verificationId: 'deviceid123',
       }
     }
   };
