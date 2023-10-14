@@ -9,9 +9,6 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./functions/
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -19,8 +16,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: Install dependencies
-        run: npm install
+      - name: func install
+        run: |
+          cd functions/
+          npm install
+      - name: build
+        run: |
+          cd local/
+          npm install
+          npm run build
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:
