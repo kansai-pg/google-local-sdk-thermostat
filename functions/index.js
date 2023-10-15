@@ -133,6 +133,9 @@ app.onSync((body) => {
           swVersion: '1.0.1',
         },
         // TODO: Add otherDeviceIds for local execution
+        otherDeviceIds: [{
+          deviceId: 'deviceid123',
+        }],
       }],
     },
   };
