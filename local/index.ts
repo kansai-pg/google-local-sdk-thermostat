@@ -27,8 +27,8 @@ const SERVER_PORT = 3388;
 
 interface IAirConditionerParams {
   on?: boolean,
-  temperatureSetpoint?: number, // 温度設定
-  mode?: string, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
+  thermostatTemperatureSetpoint?: any, // 温度設定
+  thermostatMode?: any, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
 }
 
 class LocalExecutionApp {
@@ -120,18 +120,21 @@ executeHandler(request: IntentFlow.ExecuteRequest):
    * Convert execution request into a local device command
    */
   getDataForCommand(command: string, params: IAirConditionerParams): unknown {
+    console.log("Params: " + JSON.stringify(params));
     switch (command) {
       case 'action.devices.commands.OnOff':
         return {
           on: params.on ? true : false
         };
       case 'action.devices.commands.ThermostatTemperatureSetpoint':
+        console.log(params.thermostatTemperatureSetpoint);
         return {
-	  thermostatTemperatureSetpoint: params.temperatureSetpoint
+	        thermostatTemperatureSetpoint: params.thermostatTemperatureSetpoint
         };
-      case 'action.devices.commands.SetModes':
+      case 'action.devices.commands.ThermostatSetMode':
+        console.log(params.thermostatMode);
         return {
-          currentMode: params.mode
+          thermostatMode: params.thermostatMode
         };
       default:
         console.error('Unknown command', command);
