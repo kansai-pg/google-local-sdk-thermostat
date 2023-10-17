@@ -122,10 +122,6 @@ executeHandler(request: IntentFlow.ExecuteRequest):
   getDataForCommand(command: string, params: IAirConditionerParams): unknown {
     console.log("Params: " + JSON.stringify(params));
     switch (command) {
-      case 'action.devices.commands.OnOff':
-        return {
-          on: params.on ? true : false
-        };
       case 'action.devices.commands.ThermostatTemperatureSetpoint':
         console.log(params.thermostatTemperatureSetpoint);
         return {

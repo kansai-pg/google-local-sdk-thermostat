@@ -57,7 +57,6 @@ SmartHome.prototype.setToken = (token) => {
 
 SmartHome.prototype.handleData = () => {
   const uid = this.uid;
-  const elOnOff = document.getElementById('temperature-onOff');
   const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
   const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
@@ -65,12 +64,6 @@ SmartHome.prototype.handleData = () => {
     if (snapshot.exists()) {
       const thermostatState = snapshot.val();
       console.log(thermostatState);
-
-      if (thermostatState.data.OnOff.on) elOnOff.MaterialSwitch.on();
-      else elOnOff.MaterialSwitch.off();
-
-      if (thermostatState.data.OnOff.on) thermostatOnOffSwitch.checked = true;
-      else thermostatOnOffSwitch.checked = false;
 
       temperatureSetpointInput.value = thermostatState.data.temperatureSetpoint;
       thermostatModeSelect.value = thermostatState.data.thermostatMode;
@@ -84,7 +77,6 @@ SmartHome.prototype.updateState = () => {
 
   const pkg = {
     data: {
-      OnOff: { on: thermostatOnOffSwitch.checked },
       temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
       thermostatMode: thermostatModeSelect.value
     }

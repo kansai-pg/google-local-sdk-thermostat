@@ -57,13 +57,6 @@
           </div>
           <div class="mdl-card__supporting-text">
             <h4 id='washer-id'>id 'washer'</h4>
-            <div id="temperature-onOff-main">
-              <label id="temperature-onOff" class="mdl-switch mdl-js-switch mdl-js-ripple-effect"
-              for="temperature-onOff-in">
-              <input type="checkbox" id="temperature-onOff-in" class="mdl-switch__input">
-              <span class="mdl-switch__label">Is On</span>
-            </label>
-            </div>
             <div id="temperature-setpoint-main">
               <label for="temperature-setpoint-input">Temperature Setpoint:</label>
               <input type="number" id="temperature-setpoint-input" class="mdl-textfield__input">
@@ -103,7 +96,6 @@
 
   <script>
     // 監視する要素の取得
-    const thermostatOnOffSwitch = document.getElementById('temperature-onOff-in');
     const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
     const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
