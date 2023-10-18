@@ -4,13 +4,6 @@ This project contains the source for for the [Smart Home Local Execution codelab
 which demonstrates how to integrate a local execution using a Google Home device
 with an existing smart home cloud project.
 
-## Support
-
-- Stack Overflow: https://stackoverflow.com/questions/tagged/google-smart-home
-
-If you've found an error in this codelab, please file an issue:
-https://github.com/googlecodelabs/smarthome-local/issues
-
 ## License
 Copyright 2019 Google LLC
 

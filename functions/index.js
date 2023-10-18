@@ -111,7 +111,7 @@ app.onSync((body) => {
         traits: [
           'action.devices.traits.TemperatureSetting',
           'action.devices.traits.Modes',
-          'action.devices.traits.OnOff',
+          'action.devices.commands.ThermostatTemperatureSetRange',
         ],
         name: {
           name: 'thermostat',
@@ -123,8 +123,12 @@ app.onSync((body) => {
             "heat",
             "cool",
             "dry",
+            "on",
+            "off"
           ],
-          "thermostatTemperatureUnit": "C"
+          "thermostatTemperatureUnit": "C",
+          "thermostatTemperatureSetpointHigh": 16,
+          "thermostatTemperatureSetpointLow": 32
         },
         deviceInfo: {
           manufacturer: 'hate-ms-inc',
@@ -133,6 +137,9 @@ app.onSync((body) => {
           swVersion: '1.0.1',
         },
         // TODO: Add otherDeviceIds for local execution
+        otherDeviceIds: [{
+          deviceId: 'deviceid123',
+        }],
       }],
     },
   };
@@ -142,7 +149,6 @@ const queryFirebase = async (deviceId) => {
   const snapshot = await firebaseRef.child(deviceId).once('value');
   const snapshotVal = snapshot.val();
   return {
-    on: snapshotVal.data.OnOff.on,
     temperatureSetpoint: snapshotVal.data.temperatureSetpoint,
     thermostatMode: snapshotVal.data.thermostatMode,
   };
@@ -151,7 +157,6 @@ const queryFirebase = async (deviceId) => {
 const queryDevice = async (deviceId) => {
   const data = await queryFirebase(deviceId);
   return {
-    on: data.on,
     thermostatTemperatureSetpoint: data.temperatureSetpoint,
     thermostatMode: data.thermostatMode,
   };
@@ -185,10 +190,6 @@ const updateDevice = async (execution, deviceId) => {
   const {params, command} = execution;
   let state; let ref;
   switch (command) {
-    case 'action.devices.commands.OnOff':
-      state = {on: params.on};
-      ref = firebaseRef.child(deviceId).child('data').child('OnOff');
-      break;
     case 'action.devices.commands.ThermostatTemperatureSetpoint':
       state = { temperatureSetpoint: params.thermostatTemperatureSetpoint };
       ref = firebaseRef.child(deviceId).child('data');
@@ -282,7 +283,6 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
             states: {
               /* Report the current state of our washer */
               [context.params.deviceId]: {
-                on: snapshot.data.OnOff.on,
                 temperatureSetpoint: snapshot.data.temperatureSetpoint,
                 thermostatMode: snapshot.data.thermostatMode,
               },
@@ -303,9 +303,6 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
 exports.updatestate = functions.https.onRequest((request, response) => {
   firebaseRef.child('thermostat').update({
     "data": {
-      "OnOff": {
-        "on": request.body.on,
-      },
       "temperatureSetpoint": request.body.temperatureSetpoint,
       "thermostatMode": request.body.thermostatMode,
     },

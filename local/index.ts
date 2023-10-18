@@ -27,8 +27,8 @@ const SERVER_PORT = 3388;
 
 interface IAirConditionerParams {
   on?: boolean,
-  temperatureSetpoint?: number, // 温度設定
-  mode?: string, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
+  thermostatTemperatureSetpoint?: any, // 温度設定
+  thermostatMode?: any, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
 }
 
 class LocalExecutionApp {
@@ -47,15 +47,13 @@ class LocalExecutionApp {
   }
 
   // In this codelab, the scan data contains only local device id.
-  const localDeviceId = Buffer.from(scanData.data, 'hex');
-
   const response: IntentFlow.IdentifyResponse = {
     intent: Intents.IDENTIFY,
     requestId: request.requestId,
     payload: {
       device: {
         id: 'thermostat',
-        verificationId: localDeviceId.toString(),
+        verificationId: 'deviceid123',
       }
     }
   };
@@ -122,18 +120,17 @@ executeHandler(request: IntentFlow.ExecuteRequest):
    * Convert execution request into a local device command
    */
   getDataForCommand(command: string, params: IAirConditionerParams): unknown {
+    console.log("Params: " + JSON.stringify(params));
     switch (command) {
-      case 'action.devices.commands.OnOff':
-        return {
-          on: params.on ? true : false
-        };
       case 'action.devices.commands.ThermostatTemperatureSetpoint':
+        console.log(params.thermostatTemperatureSetpoint);
         return {
-	  thermostatTemperatureSetpoint: params.temperatureSetpoint
+	        thermostatTemperatureSetpoint: params.thermostatTemperatureSetpoint
         };
-      case 'action.devices.commands.SetModes':
+      case 'action.devices.commands.ThermostatSetMode':
+        console.log(params.thermostatMode);
         return {
-          currentMode: params.mode
+          thermostatMode: params.thermostatMode
         };
       default:
         console.error('Unknown command', command);
