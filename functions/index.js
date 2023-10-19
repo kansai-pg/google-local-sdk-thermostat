@@ -122,6 +122,7 @@ app.onSync((body) => {
             "fan-only",
             "heat",
             "cool",
+            "heatcool",
             "dry",
             "on",
             "off"
