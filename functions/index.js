@@ -127,9 +127,11 @@ app.onSync((body) => {
             "on",
             "off"
           ],
+          "thermostatTemperatureRange": {
+            "thermostatTemperatureSetpointHigh": 16,
+            "thermostatTemperatureSetpointLow": 32
+          },
           "thermostatTemperatureUnit": "C",
-          "thermostatTemperatureSetpointHigh": 16,
-          "thermostatTemperatureSetpointLow": 32
         },
         deviceInfo: {
           manufacturer: 'hate-ms-inc',
