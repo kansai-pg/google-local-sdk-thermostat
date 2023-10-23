@@ -154,10 +154,8 @@ const queryFirebase = async (deviceId) => {
   return {
     temperatureSetpoint: snapshotVal.data.temperatureSetpoint,
     thermostatMode: snapshotVal.data.thermostatMode,
-    // thermostatTemperatureAmbient: data.thermostatTemperatureAmbient,
-    // thermostatHumidityAmbient: data.thermostatHumidityAmbient,
-    thermostatTemperatureAmbient: 22,
-    thermostatHumidityAmbient: 48.2,
+    thermostatTemperatureAmbient: snapshotVal.data.thermostatTemperatureAmbient,
+    thermostatHumidityAmbient: snapshotVal.data.thermostatHumidityAmbient,
   };
 };
 
@@ -166,10 +164,8 @@ const queryDevice = async (deviceId) => {
   return {
     thermostatTemperatureSetpoint: data.temperatureSetpoint,
     thermostatMode: data.thermostatMode,
-    // thermostatTemperatureAmbient: data.thermostatTemperatureAmbient,
-    // thermostatHumidityAmbient: data.thermostatHumidityAmbient,
-    thermostatTemperatureAmbient: 22,
-    thermostatHumidityAmbient: 48.2,
+    thermostatTemperatureAmbient: data.thermostatTemperatureAmbient,
+    thermostatHumidityAmbient: data.thermostatHumidityAmbient,
   };
 };
 
