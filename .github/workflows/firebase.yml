@@ -16,6 +16,35 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
+      - name: setup git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git remote set-url origin https://github-actions:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install npm-check-updates   
+        run: npm install -g npm-check-updates
+      - name: functions npm-check-updates
+        run: |
+          cd functions
+          ncu
+          ncu -u
+      - name: local npm-check-updates
+        run: |
+          cd local
+          ncu
+          ncu -u
+      - name: push github
+        run: |
+          if git diff --name-only ./local/package.json || git diff --name-only ./functions/package.json; then
+            exit 0
+          else
+            git add .
+            git commit -m "update package.json"
+            git push
+          fi
       - name: func install
         run: |
           cd functions/
