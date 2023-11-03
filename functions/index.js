@@ -111,7 +111,6 @@ app.onSync((body) => {
         traits: [
           'action.devices.traits.TemperatureSetting',
           'action.devices.traits.Modes',
-          'action.devices.commands.ThermostatTemperatureSetRange',
         ],
         name: {
           name: 'thermostat',
@@ -122,7 +121,6 @@ app.onSync((body) => {
             "fan-only",
             "heat",
             "cool",
-            "heatcool",
             "dry",
             "on",
             "off"
@@ -152,20 +150,10 @@ const queryFirebase = async (deviceId) => {
   const snapshot = await firebaseRef.child(deviceId).once('value');
   const snapshotVal = snapshot.val();
   return {
-    temperatureSetpoint: snapshotVal.data.temperatureSetpoint,
+    thermostatTemperatureSetpoint: snapshotVal.data.temperatureSetpoint,
     thermostatMode: snapshotVal.data.thermostatMode,
     thermostatTemperatureAmbient: snapshotVal.data.thermostatTemperatureAmbient,
     thermostatHumidityAmbient: snapshotVal.data.thermostatHumidityAmbient,
-  };
-};
-
-const queryDevice = async (deviceId) => {
-  const data = await queryFirebase(deviceId);
-  return {
-    thermostatTemperatureSetpoint: data.temperatureSetpoint,
-    thermostatMode: data.thermostatMode,
-    thermostatTemperatureAmbient: data.thermostatTemperatureAmbient,
-    thermostatHumidityAmbient: data.thermostatHumidityAmbient,
   };
 };
 
@@ -178,7 +166,7 @@ app.onQuery(async (body) => {
   const intent = body.inputs[0];
   for (const device of intent.payload.devices) {
     const deviceId = device.id;
-    queryPromises.push(queryDevice(deviceId)
+    queryPromises.push(queryFirebase(deviceId)
         .then((data) => {
         // Add response to device payload
           payload.devices[deviceId] = data;
@@ -195,6 +183,7 @@ app.onQuery(async (body) => {
 
 const updateDevice = async (execution, deviceId) => {
   const {params, command} = execution;
+  functions.logger.info('Request params:', params);
   let state; let ref;
   switch (command) {
     case 'action.devices.commands.ThermostatTemperatureSetpoint':
@@ -288,9 +277,8 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
         payload: {
           devices: {
             states: {
-              /* Report the current state of our washer */
               [context.params.deviceId]: {
-                temperatureSetpoint: snapshot.data.temperatureSetpoint,
+                thermostatTemperatureSetpoint: snapshot.data.temperatureSetpoint,
                 thermostatMode: snapshot.data.thermostatMode,
               },
             },
@@ -301,6 +289,7 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
       const res = await homegraph.devices.reportStateAndNotification({
         requestBody,
       });
+      functions.logger.info('Report state:', requestBody);
       functions.logger.info('Report state response:', res.status, res.data);
     });
 
