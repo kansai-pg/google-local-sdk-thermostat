@@ -110,7 +110,7 @@ app.onSync((body) => {
         type: 'action.devices.types.THERMOSTAT',
         traits: [
           'action.devices.traits.TemperatureSetting',
-          'action.devices.traits.Modes',
+          'action.devices.traits.Modes'
         ],
         name: {
           name: 'thermostat',
@@ -125,11 +125,7 @@ app.onSync((body) => {
             "on",
             "off"
           ],
-          "thermostatTemperatureRange": {
-            "thermostatTemperatureSetpointHigh": 16,
-            "thermostatTemperatureSetpointLow": 32
-          },
-          "thermostatTemperatureUnit": "C",
+          "thermostatTemperatureUnit": "C"
         },
         deviceInfo: {
           manufacturer: 'hate-ms-inc',
@@ -158,6 +154,7 @@ const queryFirebase = async (deviceId) => {
 };
 
 app.onQuery(async (body) => {
+  functions.logger.log('onQuery:',body);
   const {requestId} = body;
   const payload = {
     devices: {},
@@ -183,7 +180,7 @@ app.onQuery(async (body) => {
 
 const updateDevice = async (execution, deviceId) => {
   const {params, command} = execution;
-  functions.logger.info('Request params:', params);
+  functions.logger.log('Request params:', params);
   let state; let ref;
   switch (command) {
     case 'action.devices.commands.ThermostatTemperatureSetpoint':
@@ -212,6 +209,7 @@ app.onExecute(async (body) => {
   };
 
   const executePromises = [];
+  functions.logger.log('onExecute:',body);
   const intent = body.inputs[0];
   for (const command of intent.payload.commands) {
     for (const device of command.devices) {
