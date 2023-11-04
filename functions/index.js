@@ -278,6 +278,8 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
               [context.params.deviceId]: {
                 thermostatTemperatureSetpoint: snapshot.data.temperatureSetpoint,
                 thermostatMode: snapshot.data.thermostatMode,
+                thermostatTemperatureAmbient: snapshot.data.thermostatTemperatureAmbient,
+                thermostatHumidityAmbient: snapshot.data.thermostatHumidityAmbient,
               },
             },
           },
