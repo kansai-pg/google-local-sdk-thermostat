@@ -101,8 +101,7 @@ exports.faketoken = functions.https.onRequest((request, response) => {
 const app = smarthome();
 
 app.onSync((body, headers) => {
-  const accessToken = headers.authorization;
-  functions.logger.log("accessToken", accessToken);
+  functions.logger.log("headers", headers);
   return {
     requestId: body.requestId,
     payload: {
