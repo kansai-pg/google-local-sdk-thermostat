@@ -101,13 +101,13 @@ exports.faketoken = functions.https.onRequest((request, response) => {
 const app = smarthome();
 
 app.onSync((body, headers) => {
-  functions.logger.log("headers", headers);
+  functions.logger.log("authorization", headers.authorization);
   return {
     requestId: body.requestId,
     payload: {
       agentUserId: USER_ID,
       devices: [{
-        id: 'thermostat',
+        id: headers.authorization,
         type: 'action.devices.types.THERMOSTAT',
         traits: [
           'action.devices.traits.TemperatureSetting',
