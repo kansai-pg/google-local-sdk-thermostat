@@ -57,13 +57,13 @@ const app = smarthome();
 app.onSync(async (body, headers) => {
   const userinfo = await getauth0_userinfo(headers)
   functions.logger.log("auth0_req", userinfo);
-  functions.logger.log("set_email", userinfo.eamil);
+  functions.logger.log("set_email", userinfo.email);
   return {
     requestId: body.requestId,
     payload: {
       agentUserId: USER_ID,
       devices: [{
-        id: userinfo.eamil,
+        id: userinfo.email,
         type: 'action.devices.types.THERMOSTAT',
         traits: [
           'action.devices.traits.TemperatureSetting',
