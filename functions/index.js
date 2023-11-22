@@ -15,6 +15,7 @@
  */
 
 'use strict';
+const axios = require("axios").default;
 const functions = require('firebase-functions');
 const {smarthome} = require('actions-on-google');
 const {google} = require('googleapis');
@@ -34,80 +35,35 @@ const homegraph = google.homegraph({
 // Hardcoded user ID
 const USER_ID = '123';
 
-exports.login = functions.https.onRequest((request, response) => {
-  if (request.method === 'GET') {
-    functions.logger.log('Requesting login page');
-    response.send(`
-    <html>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <body>
-        <form action="/login" method="post">
-          <input type="hidden"
-            name="responseurl" value="${request.query.responseurl}" />
-          <button type="submit" style="font-size:14pt">
-            Link this service to Google
-          </button>
-        </form>
-      </body>
-    </html>
-  `);
-  } else if (request.method === 'POST') {
-    // Here, you should validate the user account.
-    // In this sample, we do not do that.
-    const responseurl = decodeURIComponent(request.body.responseurl);
-    functions.logger.log(`Redirect to ${responseurl}`);
-    return response.redirect(responseurl);
-  } else {
-    // Unsupported method
-    response.send(405, 'Method Not Allowed');
+const getauth0_userinfo = async (headers) => {
+  const options = {
+    method: 'GET',
+    url: 'https://dev-8dv3lur6zl8osjo1.us.auth0.com/userinfo',
+    headers: { authorization: headers.authorization },
+  };
+
+  try {
+    const response = await axios.request(options);
+    functions.logger.log("authorization", headers.authorization);
+    return response.data;
+  } catch (error) {
+    functions.logger.error("auth0_error", error);
+    throw error;
   }
-});
-
-exports.fakeauth = functions.https.onRequest((request, response) => {
-  const responseurl = util.format('%s?code=%s&state=%s',
-      decodeURIComponent(request.query.redirect_uri), 'xxxxxx',
-      request.query.state);
-  functions.logger.log(`Set redirect as ${responseurl}`);
-  return response.redirect(
-      `/login?responseurl=${encodeURIComponent(responseurl)}`);
-});
-
-exports.faketoken = functions.https.onRequest((request, response) => {
-  const grantType = request.query.grant_type ?
-    request.query.grant_type : request.body.grant_type;
-  const secondsInDay = 86400; // 60 * 60 * 24
-  const HTTP_STATUS_OK = 200;
-  functions.logger.log(`Grant type ${grantType}`);
-
-  let obj;
-  if (grantType === 'authorization_code') {
-    obj = {
-      token_type: 'bearer',
-      access_token: '123access',
-      refresh_token: '123refresh',
-      expires_in: secondsInDay,
-    };
-  } else if (grantType === 'refresh_token') {
-    obj = {
-      token_type: 'bearer',
-      access_token: '123access',
-      expires_in: secondsInDay,
-    };
-  }
-  response.status(HTTP_STATUS_OK)
-      .json(obj);
-});
+};
 
 const app = smarthome();
 
-app.onSync((body, headers) => {
-  functions.logger.log("authorization", headers.authorization);
+app.onSync(async (body, headers) => {
+  const userinfo = await getauth0_userinfo(headers)
+  functions.logger.log("auth0_req", userinfo);
+  functions.logger.log("set_email", userinfo.eamil);
   return {
     requestId: body.requestId,
     payload: {
       agentUserId: USER_ID,
       devices: [{
-        id: headers.authorization,
+        id: userinfo.eamil,
         type: 'action.devices.types.THERMOSTAT',
         traits: [
           'action.devices.traits.TemperatureSetting',
