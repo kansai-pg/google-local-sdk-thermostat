@@ -1,5 +1,8 @@
 # Smart home local execution codelab
 
+ESP32とGoogle Local Home SDKを使ってエアコンをGoogle アシスタントから操作する  
+
+
 This project contains the source for for the [Smart Home Local Execution codelab](https://codelabs.developers.google.com/codelabs/smarthome-local),
 which demonstrates how to integrate a local execution using a Google Home device
 with an existing smart home cloud project.
