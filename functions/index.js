@@ -183,11 +183,9 @@ app.onExecute(async (body) => {
                   Object.assign(result.states, data);
                 })
                 .catch((error) => {
-                  // Google アシスタントから温度が範囲外と通知される（はず）
-                  functions.logger.error('exception', error);
+                  // Google アシスタントから温度が範囲外と通知される
                   result.status = 'ERROR';
-                  result.errorCode = error;
-                  functions.logger.error('exception type', typeof(error));
+                  result.errorCode = error.message;
                   functions.logger.error('exception result', result);
                 })
         );
@@ -247,8 +245,6 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
               [context.params.deviceId]: {
                 thermostatTemperatureSetpoint: snapshot.temperatureSetpoint,
                 thermostatMode: snapshot.thermostatMode,
-                thermostatTemperatureAmbient: snapshot.thermostatTemperatureAmbient,
-                thermostatHumidityAmbient: snapshot.thermostatHumidityAmbient,
               },
             },
           },
