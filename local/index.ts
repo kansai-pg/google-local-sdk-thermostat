@@ -26,9 +26,8 @@ import IntentFlow = smarthome.IntentFlow;
 const SERVER_PORT = 3388;
 
 interface IAirConditionerParams {
-  on?: boolean,
-  thermostatTemperatureSetpoint?: any, // 温度設定
-  thermostatMode?: any, // エアコンのモード (例: 'heat', 'cool', 'fan-only', 'dry')
+  thermostatTemperatureSetpoint?: number,
+  thermostatMode?: string,
 }
 
 class LocalExecutionApp {

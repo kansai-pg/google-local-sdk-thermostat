@@ -19,7 +19,6 @@ const axios = require("axios").default;
 const functions = require('firebase-functions');
 const {smarthome} = require('actions-on-google');
 const {google} = require('googleapis');
-const util = require('util');
 const admin = require('firebase-admin');
 // Initialize Firebase
 admin.initializeApp();
@@ -55,7 +54,7 @@ const getauth0_userinfo = async (headers) => {
 const app = smarthome();
 
 app.onSync(async (body, headers) => {
-  const userinfo = await getauth0_userinfo(headers)
+  const userinfo = await getauth0_userinfo(headers);
   functions.logger.log("auth0_req", userinfo);
   functions.logger.log("set_sub", userinfo.sub);
   return {
@@ -70,11 +69,11 @@ app.onSync(async (body, headers) => {
           'action.devices.traits.Modes'
         ],
         name: {
-          name: 'thermostat',
+          name: 'エアコン',
         },
         willReportState: true,
         attributes: {
-         "availableThermostatModes": [
+          "availableThermostatModes": [
             "fan-only",
             "heat",
             "cool",
@@ -100,13 +99,13 @@ app.onSync(async (body, headers) => {
 });
 
 const queryFirebase = async (deviceId) => {
-  const snapshot = await firebaseRef.child(deviceId).once('value');
+  const snapshot = await firebaseRef.child("users").child(deviceId).once('value');
   const snapshotVal = snapshot.val();
   return {
-    thermostatTemperatureSetpoint: snapshotVal.data.temperatureSetpoint,
-    thermostatMode: snapshotVal.data.thermostatMode,
-    thermostatTemperatureAmbient: snapshotVal.data.thermostatTemperatureAmbient,
-    thermostatHumidityAmbient: snapshotVal.data.thermostatHumidityAmbient,
+    thermostatTemperatureSetpoint: snapshotVal.temperatureSetpoint,
+    thermostatMode: snapshotVal.thermostatMode,
+    thermostatTemperatureAmbient: snapshotVal.thermostatTemperatureAmbient,
+    thermostatHumidityAmbient: snapshotVal.thermostatHumidityAmbient,
   };
 };
 
@@ -141,18 +140,23 @@ const updateDevice = async (execution, deviceId) => {
   let state; let ref;
   switch (command) {
     case 'action.devices.commands.ThermostatTemperatureSetpoint':
+      const temperatureSetpoint = params.thermostatTemperatureSetpoint;
+      if (temperatureSetpoint < 16 || temperatureSetpoint > 32) {
+        throw new Error('valueOutOfRange');
+      }
       state = { temperatureSetpoint: params.thermostatTemperatureSetpoint };
-      ref = firebaseRef.child(deviceId).child('data');
+      ref = firebaseRef.child("users").child(deviceId);
       break;
     case 'action.devices.commands.ThermostatSetMode':
       state = { thermostatMode: params.thermostatMode };
-      ref = firebaseRef.child(deviceId).child('data');
+      ref = firebaseRef.child("users").child(deviceId);
       break;
   }
 
   return ref.update(state)
       .then(() => state);
 };
+
 
 app.onExecute(async (body) => {
   const {requestId} = body;
@@ -171,13 +175,21 @@ app.onExecute(async (body) => {
   for (const command of intent.payload.commands) {
     for (const device of command.devices) {
       for (const execution of command.execution) {
+        // 例外時にもdevice.idが必要なのでここで取得する
+        result.ids.push(device.id);
         executePromises.push(
             updateDevice(execution, device.id)
                 .then((data) => {
-                  result.ids.push(device.id);
                   Object.assign(result.states, data);
                 })
-                .catch(() => functions.logger.error('EXECUTE', device.id)),
+                .catch((error) => {
+                  // Google アシスタントから温度が範囲外と通知される（はず）
+                  functions.logger.error('exception', error);
+                  result.status = 'ERROR';
+                  result.errorCode = error;
+                  functions.logger.error('exception type', typeof(error));
+                  functions.logger.error('exception result', result);
+                })
         );
       }
     }
@@ -233,10 +245,10 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
           devices: {
             states: {
               [context.params.deviceId]: {
-                thermostatTemperatureSetpoint: snapshot.data.temperatureSetpoint,
-                thermostatMode: snapshot.data.thermostatMode,
-                thermostatTemperatureAmbient: snapshot.data.thermostatTemperatureAmbient,
-                thermostatHumidityAmbient: snapshot.data.thermostatHumidityAmbient,
+                thermostatTemperatureSetpoint: snapshot.temperatureSetpoint,
+                thermostatMode: snapshot.thermostatMode,
+                thermostatTemperatureAmbient: snapshot.thermostatTemperatureAmbient,
+                thermostatHumidityAmbient: snapshot.thermostatHumidityAmbient,
               },
             },
           },
@@ -254,11 +266,9 @@ exports.reportstate = functions.database.ref('{deviceId}').onWrite(
  * Update the current state of the washer device
  */
 exports.updatestate = functions.https.onRequest((request, response) => {
-  firebaseRef.child('thermostat').update({
-    "data": {
+  firebaseRef.child("users").child(body.user).update({
       "temperatureSetpoint": request.body.temperatureSetpoint,
-      "thermostatMode": request.body.thermostatMode,
-    },
+      "thermostatMode": request.body.thermostatMode
   });
   return response.status(200).end();
 });
