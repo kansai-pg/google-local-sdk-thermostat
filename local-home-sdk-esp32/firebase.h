@@ -52,8 +52,8 @@ void FirebaseDataClass::task() {
   if (millis() - dataMillis > 60000){
     dataMillis = millis();
     // thermostatはユーザーIDへ置き換える(functions/index.jsのuserinfo.subの中身の文字列)
-    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/thermostat/data/thermostatTemperatureAmbient", temperature) ? "ok" : fbdo.errorReason().c_str());
-    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/thermostat/data/thermostatHumidityAmbient", humidity) ? "ok" : fbdo.errorReason().c_str());
+    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/users/Ambient/thermostat/thermostatTemperatureAmbient", temperature) ? "ok" : fbdo.errorReason().c_str());
+    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/users/Ambient/thermostat/thermostatHumidityAmbient", humidity) ? "ok" : fbdo.errorReason().c_str());
 
     }
 }
