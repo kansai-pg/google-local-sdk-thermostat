@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
+
+const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
+const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
 function SmartHome() {
   document.addEventListener('DOMContentLoaded', function () {
-    this.denyButton = document.getElementById('demo-deny-button');
     this.userWelcome = document.getElementById('user-welcome');
-    this.updateButton = document.getElementById('demo-washer-update');
-    this.updateButton.addEventListener('click', this.updateState.bind(this));
     this.washer = document.getElementById('demo-washer');
     this.requestSync = document.getElementById('request-sync');
     this.requestSync.addEventListener('click', async () => {
@@ -32,33 +33,69 @@ function SmartHome() {
         console.error('Request SYNC error', err);
       }
     });
-    this.initFirebase();
     this.initWasher();
+    this.initAuthentication(); // 追加: Firebase Authenticationの初期化
   }.bind(this));
 }
 
-SmartHome.prototype.initFirebase = () => {
-  console.log("Initialized Firebase");
-};
-
 SmartHome.prototype.initWasher = function() {
-  console.log("Logged in as default user");
-  this.uid = "123";
-  this.userWelcome = document.getElementById('user-welcome'); // userWelcomeを取得する
-  this.userWelcome.innerHTML = "Welcome user 123!";
-  this.handleData();
-  this.washer.style.display = "block";
+  console.log("Checking user authentication status...");
+  // 追加: ユーザーがログインしているか確認
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      this.uid = user.uid;
+      this.userWelcome = document.getElementById('user-welcome');
+      this.userWelcome.innerHTML = "Welcome " + user.displayName + "!";
+      this.handleData();
+      this.washer.style.display = "block";
+      this.updateButton = document.getElementById('demo-washer-update');
+      this.updateButton.addEventListener('click', this.updateState.bind(this));
+    } else {
+      console.log("User is not logged in.");
+      // ログインしていない場合の処理を追加することもできます。
+    }
+  });
 };
 
+SmartHome.prototype.initAuthentication = function() {
+  // 追加: Google認証プロバイダのインスタンスを作成
+  const googleAuthProvider = new firebase.auth.GoogleAuthProvider();
 
-SmartHome.prototype.setToken = (token) => {
-  document.cookie = '__session=' + token + ';max-age=3600';
+  // 追加: Googleログインボタンがクリックされたときの処理
+  const googleLoginButton = document.getElementById('google-login-button');
+  googleLoginButton.addEventListener('click', () => {
+    console.log("Initiating Google login...");
+    // Googleログインのポップアップを開く
+    firebase.auth().signInWithPopup(googleAuthProvider).then(function (result) {
+    // ログイン成功時の処理（ここで必要ならばデータの読み取り等を行う）
+    console.log("Google login success:", result.user);
+    // IDトークンを取得
+    result.user.getIdToken().then(function (idToken) {
+      console.log('IDトークン:', idToken);
+
+    }).catch(function (error) {
+      console.error('IDトークン取得エラー:', error);
+    });
+
+    }).catch((error) => {
+      console.error("Google login error:", error);
+    });
+  });
+
+  // 追加: ログアウトボタンがクリックされたときの処理
+  const logoutButton = document.getElementById('logout-button');
+  logoutButton.addEventListener('click', () => {
+    console.log("Logging out...");
+    firebase.auth().signOut().then(() => {
+      console.log("User logged out.");
+      // ログアウト成功時の処理（ここで必要ならば画面の更新等を行う）
+    }).catch((error) => {
+      console.error("Logout error:", error);
+    });
+  });
 };
 
 SmartHome.prototype.handleData = () => {
-  const uid = this.uid;
-  const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
-  const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
   firebase.database().ref('/').child('thermostat').on("value", (snapshot) => {
     if (snapshot.exists()) {
@@ -72,14 +109,10 @@ SmartHome.prototype.handleData = () => {
 };
 
 SmartHome.prototype.updateState = () => {
-  const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
-  const thermostatModeSelect = document.getElementById('thermostat-mode-select');
 
   const pkg = {
-    data: {
-      temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
-      thermostatMode: thermostatModeSelect.value
-    }
+    temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
+    thermostatMode: thermostatModeSelect.value
   };
 
   console.log(pkg);
