@@ -99,7 +99,7 @@ app.onSync(async (body, headers) => {
 });
 
 const queryFirebase = async (deviceId) => {
-  const Ambient = await firebaseRef.child("users").child("Ambient").child(deviceId).once('value');
+  const Ambient = await firebaseRef.child("Ambient").child(deviceId).once('value');
   const snapshot = await firebaseRef.child("users").child(deviceId).once('value');
   const snapshotVal = snapshot.val();
   const AmbientVal = Ambient.val();
