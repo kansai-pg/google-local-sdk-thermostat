@@ -1,7 +1,14 @@
 {
   "rules": {
-    ".read": "true",
-    ".write": "true"
+    "users": {
+      "Ambient": {
+        ".read": "false",
+        ".write": "true",
+        "$other_data": {
+          ".read": "false",
+          ".write": "false"
+        }
+      }
+    }
   }
 }
-
