@@ -16,9 +16,6 @@
 
 'use strict';
 
-const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
-const thermostatModeSelect = document.getElementById('thermostat-mode-select');
-
 function SmartHome() {
   document.addEventListener('DOMContentLoaded', function () {
     this.userWelcome = document.getElementById('user-welcome');
@@ -43,11 +40,40 @@ SmartHome.prototype.initWasher = function() {
   // 追加: ユーザーがログインしているか確認
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-      this.uid = user.uid;
+      this.uid = user.providerData[0].uid;
       this.userWelcome = document.getElementById('user-welcome');
       this.userWelcome.innerHTML = "Welcome " + user.displayName + "!";
-      this.handleData();
       this.washer.style.display = "block";
+      // ログイン成功後uidを取得する
+      // この方法で取得するとsubと一致するidが入手できる
+      const oauth = "google-oauth2|" + user.providerData[0].uid;
+      console.log("get oauth uid", oauth);
+
+      SmartHome.prototype.handleData = () => {
+
+        firebase.database().ref('/users').child(oauth).on("value", (snapshot) => {
+          if (snapshot.exists()) {
+            const thermostatState = snapshot.val();
+            console.log(thermostatState);
+      
+            temperatureSetpointInput.value = thermostatState.temperatureSetpoint;
+            thermostatModeSelect.value = thermostatState.thermostatMode;
+          }
+        });
+      };
+      
+      SmartHome.prototype.updateState = () => {
+      
+        const pkg = {
+          temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
+          thermostatMode: thermostatModeSelect.value
+        };
+      
+        console.log(pkg);
+        firebase.database().ref('/users').child(oauth).set(pkg);
+      };
+      
+      this.handleData();
       this.updateButton = document.getElementById('demo-washer-update');
       this.updateButton.addEventListener('click', this.updateState.bind(this));
     } else {
@@ -67,15 +93,7 @@ SmartHome.prototype.initAuthentication = function() {
     console.log("Initiating Google login...");
     // Googleログインのポップアップを開く
     firebase.auth().signInWithPopup(googleAuthProvider).then(function (result) {
-    // ログイン成功時の処理（ここで必要ならばデータの読み取り等を行う）
-    console.log("Google login success:", result.user);
-    // IDトークンを取得
-    result.user.getIdToken().then(function (idToken) {
-      console.log('IDトークン:', idToken);
-
-    }).catch(function (error) {
-      console.error('IDトークン取得エラー:', error);
-    });
+    console.log("Google login success:");
 
     }).catch((error) => {
       console.error("Google login error:", error);
@@ -93,30 +111,6 @@ SmartHome.prototype.initAuthentication = function() {
       console.error("Logout error:", error);
     });
   });
-};
-
-SmartHome.prototype.handleData = () => {
-
-  firebase.database().ref('/').child('thermostat').on("value", (snapshot) => {
-    if (snapshot.exists()) {
-      const thermostatState = snapshot.val();
-      console.log(thermostatState);
-
-      temperatureSetpointInput.value = thermostatState.data.temperatureSetpoint;
-      thermostatModeSelect.value = thermostatState.data.thermostatMode;
-    }
-  });
-};
-
-SmartHome.prototype.updateState = () => {
-
-  const pkg = {
-    temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
-    thermostatMode: thermostatModeSelect.value
-  };
-
-  console.log(pkg);
-  firebase.database().ref('/').child('thermostat').set(pkg);
 };
 
 window.smarthome = new SmartHome();

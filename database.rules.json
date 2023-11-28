@@ -2,11 +2,11 @@
   "rules": {
     "Ambient": {
       ".read": "auth != null",
-      ".write": "true",
-      "users": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+      ".write": "true"
+    	},
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null"
       }
-    }
   }
 }

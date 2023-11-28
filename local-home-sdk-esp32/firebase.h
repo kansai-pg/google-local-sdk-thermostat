@@ -49,12 +49,12 @@ int count = 0;
 void FirebaseDataClass::task() {
   float temperature = sht31.readTemperature();
   float humidity = sht31.readHumidity();
-  // 1分待機
+ // 1分待機
   if (millis() - dataMillis > 60000){
     dataMillis = millis();
     // thermostatはユーザーIDへ置き換える(functions/index.jsのuserinfo.subの中身の文字列)
-    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/users/Ambient/google-oauth2|101581906579469553343/thermostatTemperatureAmbient", temperature) ? "ok" : fbdo.errorReason().c_str());
-    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/users/Ambient/google-oauth2|101581906579469553343/thermostatHumidityAmbient", humidity) ? "ok" : fbdo.errorReason().c_str());
+    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/Ambient/google-oauth2|101581906579469553343/thermostatTemperatureAmbient", temperature) ? "ok" : fbdo.errorReason().c_str());
+    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/Ambient/google-oauth2|101581906579469553343/thermostatHumidityAmbient", humidity) ? "ok" : fbdo.errorReason().c_str());
 
     }
 }
