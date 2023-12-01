@@ -30,7 +30,6 @@
   <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.blue_grey-orange.min.css">
   <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
 
-  <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
@@ -39,25 +38,27 @@
     <!-- Header section containing title -->
     <header class="mdl-layout__header mdl-color-text--white mdl-color--light-blue-700">
       <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-        <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop">
+        <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop" style="padding: 0;">
           <h3>
             <i class="material-icons">home</i> Smart Home Codelab
             <button class="mdl-button mdl-js-button mdl-button--icon" id='request-sync'>
               <i class="material-icons">refresh</i>
             </button>
+            <div class="auth-button">
+              <button id="google-login-button" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
+                Log In with Google
+              </button>
+              <button id="logout-button" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
+                style="display:none;">
+                Log Out
+              </button>
+            </div>
+            <p id='user-welcome'></p>
           </h3>
-          <h3 class='user-welcome-heading' id='user-welcome'></h3>
-          <!-- 追加: Googleログインボタン -->
-          <button id="google-login-button" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
-            Log In with Google
-          </button>
-          <!-- 追加: ログアウトボタン -->
-          <button id="logout-button" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" style="display:none;">
-            Log Out
-          </button>
         </div>
       </div>
     </header>
+
     <main class="mdl-layout__content mdl-color--grey-100">
       <div class="mdl-cell--16-col mdl-cell--16-col-tablet mdl-grid">
         <div id="demo-washer" class="demo-card-square mdl-card mdl-shadow--2dp" style="display:none;">
@@ -65,7 +66,6 @@
             <h2 class="mdl-card__title-text">Smart Washer</h2>
           </div>
           <div class="mdl-card__supporting-text">
-            <h4 id='washer-id'>id 'washer'</h4>
             <div id="temperature-setpoint-main">
               <label for="temperature-setpoint-input">Temperature Setpoint:</label>
               <input type="number" id="temperature-setpoint-input" class="mdl-textfield__input">
@@ -76,7 +76,8 @@
                 <option value="off">Off</option>
                 <option value="heat">Heat</option>
                 <option value="cool">Cool</option>
-                <option value="dry">Heat-Cool</option>
+                <option value="dry">dry</option>
+                <option value="fan-only">fan-only</option>
                 <option value="on">On</option>
               </select>
             </div>
@@ -100,17 +101,9 @@
   <script src="/__/firebase/7.13.1/firebase-database.js"></script>
   <script src="/__/firebase/init.js"></script>
 
+  <!-- External JavaScript -->
   <script src="main.js"></script>
-
-  <script>
-    // 監視する要素の取得
-    const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
-    const thermostatModeSelect = document.getElementById('thermostat-mode-select');
-
-    // イベントリスナーの追加
-    temperatureSetpointInput.addEventListener('change', window.smarthome.updateState.bind(window.smarthome));
-    thermostatModeSelect.addEventListener('change', window.smarthome.updateState.bind(window.smarthome));
-  </script>
 </body>
 
 </html>
+

@@ -15,6 +15,12 @@
  */
 
 'use strict';
+// 監視する要素の取得
+const temperatureSetpointInput = document.getElementById('temperature-setpoint-input');
+const thermostatModeSelect = document.getElementById('thermostat-mode-select');
+
+const googleLoginButton = document.getElementById('google-login-button');
+const logoutButton = document.getElementById('logout-button');
 
 function SmartHome() {
   document.addEventListener('DOMContentLoaded', function () {
@@ -35,11 +41,14 @@ function SmartHome() {
   }.bind(this));
 }
 
-SmartHome.prototype.initWasher = function() {
+SmartHome.prototype.initWasher = function () {
   console.log("Checking user authentication status...");
-  // 追加: ユーザーがログインしているか確認
+  // ユーザーがログインしているか確認
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
+      // ログインしている場合
+      googleLoginButton.style.display = "none";
+      logoutButton.style.display = "block";
       this.uid = user.providerData[0].uid;
       this.userWelcome = document.getElementById('user-welcome');
       this.userWelcome.innerHTML = "Welcome " + user.displayName + "!";
@@ -55,57 +64,59 @@ SmartHome.prototype.initWasher = function() {
           if (snapshot.exists()) {
             const thermostatState = snapshot.val();
             console.log(thermostatState);
-      
+
             temperatureSetpointInput.value = thermostatState.temperatureSetpoint;
             thermostatModeSelect.value = thermostatState.thermostatMode;
           }
         });
       };
-      
+
       SmartHome.prototype.updateState = () => {
-      
+
         const pkg = {
           temperatureSetpoint: parseFloat(temperatureSetpointInput.value),
           thermostatMode: thermostatModeSelect.value
         };
-      
+
         console.log(pkg);
         firebase.database().ref('/users').child(oauth).set(pkg);
       };
-      
+
       this.handleData();
       this.updateButton = document.getElementById('demo-washer-update');
       this.updateButton.addEventListener('click', this.updateState.bind(this));
+      temperatureSetpointInput.addEventListener('change', window.smarthome.updateState.bind(window.smarthome));
+      thermostatModeSelect.addEventListener('change', window.smarthome.updateState.bind(window.smarthome));
     } else {
       console.log("User is not logged in.");
-      // ログインしていない場合の処理を追加することもできます。
+      // ログインしていない場合
+      googleLoginButton.style.display = "block";
+      logoutButton.style.display = "none";
     }
   });
 };
 
-SmartHome.prototype.initAuthentication = function() {
+SmartHome.prototype.initAuthentication = function () {
   // 追加: Google認証プロバイダのインスタンスを作成
   const googleAuthProvider = new firebase.auth.GoogleAuthProvider();
 
   // 追加: Googleログインボタンがクリックされたときの処理
-  const googleLoginButton = document.getElementById('google-login-button');
   googleLoginButton.addEventListener('click', () => {
     console.log("Initiating Google login...");
     // Googleログインのポップアップを開く
     firebase.auth().signInWithPopup(googleAuthProvider).then(function (result) {
-    console.log("Google login success:");
-
+      console.log("Google login success:");
     }).catch((error) => {
       console.error("Google login error:", error);
     });
   });
 
   // 追加: ログアウトボタンがクリックされたときの処理
-  const logoutButton = document.getElementById('logout-button');
   logoutButton.addEventListener('click', () => {
     console.log("Logging out...");
     firebase.auth().signOut().then(() => {
       console.log("User logged out.");
+      location.reload()
       // ログアウト成功時の処理（ここで必要ならば画面の更新等を行う）
     }).catch((error) => {
       console.error("Logout error:", error);
