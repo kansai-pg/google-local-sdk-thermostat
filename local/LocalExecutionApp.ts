@@ -94,7 +94,6 @@ executeHandler(request: IntentFlow.ExecuteRequest):
 
   const command = request.inputs[0].payload.commands[0];
   const execution = command.execution[0];
-  console.log(request);
   const response = new Execute.Response.Builder()
     .setRequestId(request.requestId);
 
