@@ -14,6 +14,7 @@ class mac {
 BlinkLEDclass blinkLED_class;
 mac mac_address;
 
+// LEDを点滅させるための関数
 void BlinkLEDclass::blinkLED(CRGB color, int duration) {
   int numBlinks = 5;  // Number of blinks
   for (int i = 0; i < numBlinks; i++) {

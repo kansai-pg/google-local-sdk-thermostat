@@ -53,65 +53,100 @@ const getauth0_userinfo = async (headers) => {
 
 const app = smarthome();
 
-app.onSync(async (body, headers) => {
-  const userinfo = await getauth0_userinfo(headers);
-  functions.logger.log("auth0_req", userinfo);
-  functions.logger.log("set_sub", userinfo.sub);
+app.onSync(async (body) => {
   return {
     requestId: body.requestId,
     payload: {
       agentUserId: USER_ID,
       devices: [{
-        id: userinfo.sub,
-        type: 'action.devices.types.THERMOSTAT',
-        traits: [
-          'action.devices.traits.TemperatureSetting',
-          'action.devices.traits.Modes'
-        ],
-        name: {
-          name: 'エアコン',
-        },
-        willReportState: true,
-        attributes: {
-          "availableThermostatModes": [
-            "fan-only",
-            "heat",
-            "cool",
-            "dry",
-            "on",
-            "off"
+          // ここで指定したIDは device.id で後から取得できる
+          // ほかのデバイスと重複しなければなんでも良い
+          id: "thermostat",
+          // デバイスに適したものを選ぶ
+          type: 'action.devices.types.THERMOSTAT',
+          traits: [
+            // type によって対応しているトレイルは異なる
+            'action.devices.traits.TemperatureSetting',
+            'action.devices.traits.Modes'
           ],
-          "thermostatTemperatureUnit": "C"
+          name: {
+            // typeに関係なく、ここに記入した名前をアシスタントが読み上げる
+            // アプリからの表示もここに記入した名前になる
+            // 操作するときはここに記入した名前でアシスタントへ命令する
+            name: 'エアコン',
+          },
+          willReportState: true,
+          attributes: {
+            // エアコン or スマートリモコンが対応している動作モードを書く
+            "availableThermostatModes": [
+              "fan-only",
+              "heat",
+              "cool",
+              "dry",
+              "on",
+              "off"
+            ],
+            "thermostatTemperatureUnit": "C"
+          },
+          // アプリ上から表示される
+          deviceInfo: {
+            manufacturer: 'hate-ms-inc',
+            model: 'esp32-dev-test',
+            hwVersion: '1.9',
+            swVersion: '1.9.1.9',
+          },
+          // マイコンに割り当てたIDを記入、もしくは自動取得する
+          otherDeviceIds: [{
+            deviceId: 'thermostat123',
+          }],
         },
-        deviceInfo: {
-          manufacturer: 'hate-ms-inc',
-          model: 'esp32-dev-test',
-          hwVersion: '1.0',
-          swVersion: '1.0.1',
-        },
-        // TODO: Add otherDeviceIds for local execution
-        otherDeviceIds: [{
-          deviceId: 'deviceid123',
-        }],
-      }],
+        {
+          id: "switch",
+          type: 'action.devices.types.SWITCH',
+          traits: [
+            'action.devices.traits.OnOff'
+          ],
+          name: {
+            name: '照明',
+          },
+          willReportState: false,
+          deviceInfo: {
+            manufacturer: 'hate-ms-inc',
+            model: 'esp32-dev-test',
+            hwVersion: '1.9',
+            swVersion: '1.9.1.9',
+          },
+          otherDeviceIds: [{
+            deviceId: 'switch123',
+          }],
+        }
+      ],
     },
   };
 });
 
-const queryFirebase = async (deviceId) => {
-  const Ambient = await firebaseRef.child("Ambient").child(deviceId).once('value');
-  const snapshot = await firebaseRef.child("users").child(deviceId).once('value');
+const queryFirebase = async (userinfo) => {
+  // firebase realtime database のPATH
+  const Ambient = await firebaseRef.child("Ambient").child(userinfo).once('value');
+  const snapshot = await firebaseRef.child("users").child(userinfo).once('value');
   const snapshotVal = snapshot.val();
   const AmbientVal = Ambient.val();
   return {
+    // type に応じた firebase realtime database のPATHを書く
     thermostatTemperatureSetpoint: snapshotVal.temperatureSetpoint,
     thermostatMode: snapshotVal.thermostatMode,
     thermostatTemperatureAmbient: AmbientVal.thermostatTemperatureAmbient,
     thermostatHumidityAmbient: AmbientVal.thermostatHumidityAmbient,
+    on: snapshotVal.lightOnOff,
   };
 };
 
-app.onQuery(async (body) => {
+app.onQuery(async (body, headers) => {
+  const userinfo = await getauth0_userinfo(headers);
+  // auth0から取得した認証情報
+  functions.logger.log("auth0_req", userinfo);
+  // subはoauth認証時にユーザーを識別するためのID
+  functions.logger.log("set_sub", userinfo.sub);
   functions.logger.log('onQuery:',body);
   const {requestId} = body;
   const payload = {
@@ -120,11 +155,10 @@ app.onQuery(async (body) => {
   const queryPromises = [];
   const intent = body.inputs[0];
   for (const device of intent.payload.devices) {
-    const deviceId = device.id;
-    queryPromises.push(queryFirebase(deviceId)
+    queryPromises.push(queryFirebase(userinfo.sub)
         .then((data) => {
         // Add response to device payload
-          payload.devices[deviceId] = data;
+          payload.devices[device.id] = data;
         },
         ));
   }
@@ -136,7 +170,7 @@ app.onQuery(async (body) => {
   };
 });
 
-const updateDevice = async (execution, deviceId) => {
+const updateDevice = async (execution, userinfo) => {
   const {params, command} = execution;
   functions.logger.log('Request params:', params);
   let state; let ref;
@@ -147,20 +181,28 @@ const updateDevice = async (execution, deviceId) => {
         throw new Error('valueOutOfRange');
       }
       state = { temperatureSetpoint: params.thermostatTemperatureSetpoint };
-      ref = firebaseRef.child("users").child(deviceId);
       break;
     case 'action.devices.commands.ThermostatSetMode':
       state = { thermostatMode: params.thermostatMode };
-      ref = firebaseRef.child("users").child(deviceId);
       break;
+    case 'action.devices.commands.OnOff':
+      state = { lightOnOff: params.on };
+      break;
+    default:
+      // 未知のparamsが渡された場合の処理
+      Object.keys(params).forEach(function (key) {
+        throw new Error('Unknown params: ' + "Key: " + key + ", Value: " + params[key]);
+      });
   }
-
+  // ユーザーから取得したsubと紐付けてデータを保存する
+  ref = firebaseRef.child("users").child(userinfo);
   return ref.update(state)
       .then(() => state);
 };
 
 
-app.onExecute(async (body) => {
+app.onExecute(async (body, headers) => {
+  const userinfo = await getauth0_userinfo(headers);
   const {requestId} = body;
   // Execution results are grouped by status
   const result = {
@@ -180,12 +222,13 @@ app.onExecute(async (body) => {
         // 例外時にもdevice.idが必要なのでここで取得する
         result.ids.push(device.id);
         executePromises.push(
-            updateDevice(execution, device.id)
+            updateDevice(execution, userinfo.sub)
                 .then((data) => {
                   Object.assign(result.states, data);
                 })
                 .catch((error) => {
-                  // Google アシスタントから温度が範囲外と通知される
+                  // Google アシスタントから例外の内容が通知される
+                  // 当然だが対応している内容の例外じゃないと読み上げてくれない
                   result.status = 'ERROR';
                   result.errorCode = error.message;
                   functions.logger.error('exception result', result);
@@ -205,6 +248,8 @@ app.onExecute(async (body) => {
 });
 
 app.onDisconnect((body, headers) => {
+  // ユーザーがunlinked操作を行ったときに呼び出される
+  // 不特定多数に公開する場合データ削除などの処理を書くと良いかも？
   functions.logger.log('User account unlinked from Google Assistant');
   // Return empty response
   return {};
@@ -212,6 +257,8 @@ app.onDisconnect((body, headers) => {
 
 exports.smarthome = functions.https.onRequest(app);
 
+// 更新時に呼び出されていると思う関数
+// （よくわかってない）
 exports.requestsync = functions.https.onRequest(async (request, response) => {
   response.set('Access-Control-Allow-Origin', '*');
   functions.logger.info(`Request SYNC for user ${USER_ID}`);
@@ -227,46 +274,4 @@ exports.requestsync = functions.https.onRequest(async (request, response) => {
     functions.logger.error(err);
     response.status(500).send(`Error requesting sync: ${err}`);
   }
-});
-
-/**
- * Send a REPORT STATE call to the homegraph when data for any device id
- * has been changed.
- */
-exports.reportstate = functions.database.ref('{deviceId}').onWrite(
-    async (change, context) => {
-      functions.logger.info('Firebase write event triggered Report State');
-      const snapshot = change.after.val();
-
-      const requestBody = {
-        requestId: 'ff36a3cc', /* Any unique ID */
-        agentUserId: USER_ID,
-        payload: {
-          devices: {
-            states: {
-              [context.params.deviceId]: {
-                thermostatTemperatureSetpoint: snapshot.temperatureSetpoint,
-                thermostatMode: snapshot.thermostatMode,
-              },
-            },
-          },
-        },
-      };
-
-      const res = await homegraph.devices.reportStateAndNotification({
-        requestBody,
-      });
-      functions.logger.info('Report state:', requestBody);
-      functions.logger.info('Report state response:', res.status, res.data);
-    });
-
-/**
- * Update the current state of the washer device
- */
-exports.updatestate = functions.https.onRequest((request, response) => {
-  firebaseRef.child("users").child(body.user).update({
-      "temperatureSetpoint": request.body.temperatureSetpoint,
-      "thermostatMode": request.body.thermostatMode
-  });
-  return response.status(200).end();
 });

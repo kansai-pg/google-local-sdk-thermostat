@@ -7,9 +7,6 @@
     "rewrites": [{
       "source": "/requestsync",
       "function": "requestsync"
-    }, {
-      "source": "/updatestate",
-      "function": "updatestate"
     }],
     "headers": [{
       "source" : "**/*.@(js|html)",

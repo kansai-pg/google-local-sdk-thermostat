@@ -32,10 +32,10 @@ void FirebaseDataClass::begin() {
     ESP.restart();
   }
   // 認証なしでアクセスする（テストモード）
-  // 少なくとも1分後には値が更新されるので変な値を入れられてもたぶん大丈夫
+  // 少なくとも1分後には値が更新されるので変な値を入れられてもたぶん大丈夫()
   config.signer.test_mode = true;
 
-  // Real time data baseのURLを割り当てる
+  // Real time data baseのURL
   config.database_url = DATABASE_URL;
   
   fbdo.setEthernetClient(&client, mac_address.mac, WIZNET_CS_PIN, WIZNET_RESET_PIN);
@@ -49,10 +49,10 @@ int count = 0;
 void FirebaseDataClass::task() {
   float temperature = sht31.readTemperature();
   float humidity = sht31.readHumidity();
- // 1分待機
+  // 1分待機
   if (millis() - dataMillis > 60000){
     dataMillis = millis();
-    // thermostatはユーザーIDへ置き換える(functions/index.jsのuserinfo.subの中身の文字列)
+    // firebase realtime database のPATH
     Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/Ambient/google-oauth2|101581906579469553343/thermostatTemperatureAmbient", temperature) ? "ok" : fbdo.errorReason().c_str());
     Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "/Ambient/google-oauth2|101581906579469553343/thermostatHumidityAmbient", humidity) ? "ok" : fbdo.errorReason().c_str());
 

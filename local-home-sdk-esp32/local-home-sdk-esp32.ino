@@ -7,7 +7,9 @@
 #include "firebase.h"
 
 #define DISCOVERY_PACKET "HelloLocalHomeSDK"
-#define DEVICEID "deviceid123"
+// マイコンに割り当てたIDを記入、もしくは自動取得する
+#define DEVICEID "thermostat123"
+#define DEVICEID2 "switch123"
 
 class LocalHomeUDP {
 public:
@@ -45,6 +47,7 @@ public:
 
     Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
     Udp.write(DEVICEID);
+    Udp.write(DEVICEID2);
     Udp.endPacket();
   }
 };

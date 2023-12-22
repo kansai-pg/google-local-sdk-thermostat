@@ -23,12 +23,10 @@ jobs:
         run: |
           cd functions
           ncu
-          ncu -u
       - name: local npm-check-updates
         run: |
           cd local
           ncu
-          ncu -u
       - name: func install
         run: |
           cd functions/
@@ -39,9 +37,9 @@ jobs:
           npm install
           npm run build
       - name: Deploy to Firebase
-        uses: w9jds/firebase-action@master
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          PROJECT_ID: testpro-21356
