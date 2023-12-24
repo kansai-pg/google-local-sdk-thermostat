@@ -53,7 +53,10 @@ const getauth0_userinfo = async (headers) => {
 
 const app = smarthome();
 
-app.onSync(async (body) => {
+app.onSync(async (body, headers) => {
+  const userinfo = await getauth0_userinfo(headers);
+  // auth0から取得した認証情報
+  functions.logger.log("auth0_req", userinfo);
   return {
     requestId: body.requestId,
     payload: {
@@ -99,6 +102,14 @@ app.onSync(async (body) => {
           otherDeviceIds: [{
             deviceId: 'thermostat123',
           }],
+          // その名の通りカスタムデータを定義出来る
+          // ドキュメントを見ると複数データにも対応していそう
+          // https://developers.home.google.com/cloud-to-cloud/intents/sync?hl=ja
+          "customData": {
+            // subはoauth認証時にユーザーを識別するためのID
+            // ここに定義することによりauth0のAPIを初回時に1回叩くだけで良くなる
+            "oauth_sub": userinfo.sub
+          },
         },
         {
           id: "switch",
@@ -119,6 +130,9 @@ app.onSync(async (body) => {
           otherDeviceIds: [{
             deviceId: 'switch123',
           }],
+          "customData": {
+            "oauth_sub": userinfo.sub
+          },
         }
       ],
     },
@@ -141,12 +155,7 @@ const queryFirebase = async (userinfo) => {
   };
 };
 
-app.onQuery(async (body, headers) => {
-  const userinfo = await getauth0_userinfo(headers);
-  // auth0から取得した認証情報
-  functions.logger.log("auth0_req", userinfo);
-  // subはoauth認証時にユーザーを識別するためのID
-  functions.logger.log("set_sub", userinfo.sub);
+app.onQuery(async (body) => {
   functions.logger.log('onQuery:',body);
   const {requestId} = body;
   const payload = {
@@ -155,7 +164,8 @@ app.onQuery(async (body, headers) => {
   const queryPromises = [];
   const intent = body.inputs[0];
   for (const device of intent.payload.devices) {
-    queryPromises.push(queryFirebase(userinfo.sub)
+    // onSyncで定義したsubをここで取得する
+    queryPromises.push(queryFirebase(device.customData.oauth_sub)
         .then((data) => {
         // Add response to device payload
           payload.devices[device.id] = data;
@@ -201,8 +211,7 @@ const updateDevice = async (execution, userinfo) => {
 };
 
 
-app.onExecute(async (body, headers) => {
-  const userinfo = await getauth0_userinfo(headers);
+app.onExecute(async (body) => {
   const {requestId} = body;
   // Execution results are grouped by status
   const result = {
@@ -221,18 +230,20 @@ app.onExecute(async (body, headers) => {
       for (const execution of command.execution) {
         // 例外時にもdevice.idが必要なのでここで取得する
         result.ids.push(device.id);
+        functions.logger.log('device:',device);
         executePromises.push(
-            updateDevice(execution, userinfo.sub)
-                .then((data) => {
-                  Object.assign(result.states, data);
-                })
-                .catch((error) => {
-                  // Google アシスタントから例外の内容が通知される
-                  // 当然だが対応している内容の例外じゃないと読み上げてくれない
-                  result.status = 'ERROR';
-                  result.errorCode = error.message;
-                  functions.logger.error('exception result', result);
-                })
+          updateDevice(execution, device.customData.oauth_sub)
+              .then((data) => {
+                Object.assign(result.states, data);
+              })
+              .catch((error) => {
+                // Google アシスタントから例外の内容が通知される
+                // 当然だが対応している内容の例外じゃないと読み上げてくれない
+                // https://developers.home.google.com/cloud-to-cloud/intents/errors-exceptions?hl=ja
+                result.status = 'ERROR';
+                result.errorCode = error.message;
+                functions.logger.error('exception result', result);
+              })
         );
       }
     }
