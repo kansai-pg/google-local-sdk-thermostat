@@ -45,23 +45,19 @@ void LocalHomeServer::task() {
             if (doc.containsKey("thermostatTemperatureSetpoint")) {
 
               int thermostatTemperatureSetpoint = doc["thermostatTemperatureSetpoint"];
-              
               ac_controller.on();
               ac_controller.setTemp(thermostatTemperatureSetpoint);
               Serial.println("thermostatTemperatureSetpoint: " + String(thermostatTemperatureSetpoint));
-
-
               reportState();
+
             }
             // エアコンの動作モード
             if (doc.containsKey("thermostatMode")) {
               ac_controller.on();
+
               if (doc["thermostatMode"] == "off") {
-                // reportState()の呼び出しまで処理が走らないように returnで終了させる
                 ac_controller.off();
-                ac_controller.send();
                 Serial.println("off");
-                return;
 
               } else if (doc["thermostatMode"] == "cool") {
                 ac_controller.setMode(kHitachiAc424Cool);
